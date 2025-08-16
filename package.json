@@ -1,0 +1,22 @@
+{
+  "name": "yku.tsukimiya.site",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 20080",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mdi/js": "^7.4.47",
+    "hammerjs": "^2.0.8",
+    "marked": "^16.1.2",
+    "vue": "^3.5.17",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "vite": "^7.0.4"
+  }
+}
