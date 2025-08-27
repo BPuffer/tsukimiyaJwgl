@@ -153,9 +153,7 @@
           {{ loginInProgress ? (loginInProgressMessage || '登录中...') : '登录' }}
         </button>
         <div v-if="loginError" class="error-message">
-          <p v-for="(para, _) in loginError.split('<br>')" class="error-message-line">
-            {{ para }}
-          </p>
+          {{ loginError }}
         </div>
       </div>
       
@@ -768,6 +766,8 @@ async function openLicense(event) {
   color: #c62828;
   font-size: 14px;
   text-align: center;
+
+  white-space: break-spaces;
 }
 
 .error-message-line {

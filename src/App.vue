@@ -4,15 +4,12 @@
   <div class="page-container">
     <router-view v-if="isAllReady" class="content" />
   </div>
-  <Footer></Footer>
-
 </template>
 
 <script setup>
 import NavMobile from '@/components/NavMobile.vue'
 import NavDesktop from '@/components/NavDesktop.vue'
 import DataModel from '@/models/DataModel.js'
-import Footer from '@/components/Footer.vue';
 import StyleManager from '@/models/styleManager.js';
 
 import { ref, onMounted, watch } from 'vue';

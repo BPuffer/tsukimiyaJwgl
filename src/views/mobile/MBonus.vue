@@ -1,27 +1,25 @@
 <template>
-  <div class="bonus-view-container" :class="{
-    freeze: isDragging
-  }">
+  <div class="bonus-view-container">
     <div v-if="eventsLoading" class="events-loading">
       <div class="loading-spinner"></div>
       <div class="loading-text">服务器可能又挂了...</div>
     </div>
-    <div v-if="currentEvent" class="current-event">
+    <!-- <div v-if="currentEvent" class="current-event">
       <h2 class="current-title">{{ currentEvent.title }}</h2>
-      <div class="current-date">{{ formatDate(currentEvent.dateStart) }} - {{ formatDate(currentEvent.dateEnd) }}</div>
+      <div class="current-date">{{ currentEvent.date_tag }}</div>
       <div class="current-description">
         <div v-html="renderedDescription" class="markdown-content"></div>
         <div class="current-description-sentinel"></div>
       </div>
-
-    </div>
+    </div> -->
+    <MEvent :event="currentEvent" />
     <!-- <p>displayedEvents: {{ displayedEvents }}</p>
     <div v-if="displayedEvents.length > 0">
       <div v-for="(event, index) in displayedEvents">
         <button @click="console.debug(event)">{{event.title}}</button>
       </div>
     </div> -->
-    <div v-if="displayedEvents.length > 0" class="nav-circle-container">
+    <div v-if="!eventsLoading" class="nav-circle-container">
       <div class="nav-circle" ref="navCircleRef" @touchstart.passive="onDragStart" @touchmove.passive="onDragMove"
         @touchend="onDragEnd" :class="{ 'nav-circle-dragging': isDragging }">
         <div v-for="(event, index) in displayedEvents">
@@ -177,6 +175,8 @@
     <!-- <p>termItems: {{ termItems }}</p> -->
     <!-- <p>termItems[0]?.options?.length: {{ termItems[0]?.options?.length }}</p> -->
     <!-- <p>null: {{ null }}</p> -->
+
+    <!-- <p>events: {{ events }}</p> -->
   </div>
 </template>
 
@@ -184,26 +184,34 @@
 import { ref, computed, watch, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router';
 import DataModel from '@/models/DataModel';
+import MEvent from '@/components/MEvent.vue';
 import { marked } from 'marked';
 import '@/assets/markdown-styles.css';
 
 const router = useRouter();
-const eventsLoading = ref(false);
-const events = ref(
-  DataModel.server?.events && Object.keys(DataModel.server?.events).length > 0 ?
-    DataModel.server.events :
-    {
+const eventsLoading = ref(true);
+const events = ref({});
+
+const loadEvent = () => {
+  if (Object.keys(DataModel.server?.events).length === 0) {
+    events.value = {
       "_placeholder": {
         "title": "暂无活动",
         "description": "暂无活动",
-        "dateStartReg": "19700101",
-        "dateStart": "19700101",
-        "dateEnd": "19700101",
+        "date_tag": "-",
+        "timestamp": "0",
         "prevImg": "/img/exam_unknown_thumb.png",
         "bgImg": "/img/military_bg.jpg"
-      },
+      }
     }
-);
+  } else {
+    events.value = {
+      ...DataModel.server?.events,
+    }
+  }
+  eventsLoading.value = false;
+}
+
 
 const renderedDescription = computed(() => {
   return marked.parse(currentEvent.value.description)
@@ -216,7 +224,7 @@ const subItemIntervalAngle = 20;
 const sortedEvents = computed(() => {
   // 按报名开始日期排序
   return Object.values(events.value).sort((a, b) => {
-    return a.dateStartReg.localeCompare(b.dateStartReg)
+    return Number(a.timestamp) - Number(b.timestamp)
   })
 })
 // 总活动数量
@@ -344,12 +352,6 @@ const calculatePointPositionStyle = (index) => {
     transition: isDragging.value ? 'none' : 'left 0.3s ease, top 0.3s ease'
   }
 }
-const formatDate = (dateStr) => {
-  if (!dateStr) return ''
-  // 简单格式化日期
-  return dateStr.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')
-}
-
 // #endregion
 
 // #region 我的分数界面
@@ -529,11 +531,10 @@ onMounted(() => {
       (async () => {
         await DataModel.serverUpdatePromise;
         console.log('服务器数据更新完成');
-        eventsLoading.value = false;
-        events.value = DataModel.server?.events || {};
+        loadEvent();
       })();
     } else {
-      eventsLoading.value = false;
+      loadEvent();
     }
     resetTermSelection();
   });
@@ -556,57 +557,6 @@ onMounted(() => {
   overflow: hidden;
   padding: 0;
 }
-
-.freeze {
-  pointer-events: none;
-
-}
-
-/* #region 当前活动展示 */
-.current-event {
-  display: flex;
-  flex-direction: column;
-  max-height: 100%;
-  overflow: scroll;
-
-  background: rgba(255, 255, 255, 0.08);
-  /* backdrop-filter: blur(10px); */
-  background-color: #fff7f7c0;
-  border-radius: 15px;
-  padding: 20px 5px;
-  margin: 15px 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-
-  z-index: 5;
-}
-
-.current-date {
-  font-size: 13px;
-  color: #a0a0c0;
-  text-align: right;
-  margin-bottom: 10px;
-  margin-right: 20px;
-}
-
-.current-title {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1.3;
-  margin-bottom: 0;
-  text-align: center;
-}
-
-.current-description {
-  font-size: 13px;
-  overflow: auto;
-}
-
-.current-description-sentinel {
-  height: 100vw;
-}
-
-/* #endregion */
 
 /* #region 导航 */
 .nav-circle-container {

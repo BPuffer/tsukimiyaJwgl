@@ -1,5 +1,5 @@
 <template>
-  <div v-if="dialog.show.value" class="dialog-mask">
+  <div v-if="dialog._showing.value" class="dialog-mask">
     <div v-if="dialog.appearance.value === 'alert'" class="dialog-window">
       <div class="dialog-title">
         {{ title }}
@@ -140,6 +140,8 @@ watch(() => props.dialog.show.value, (newVal) => {
   padding: 0 24px 20px;
   font-size: 15px;
   line-height: 1.5;
+  max-height: 50vh;
+  overflow: auto;
   color: #666;
   text-align: center;
 }

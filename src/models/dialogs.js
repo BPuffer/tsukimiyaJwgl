@@ -1,15 +1,15 @@
 // dialogs.js
 import { ref } from 'vue'
 
-export default function createDialog() {
-  const show = ref(false)
-  const title = ref('')
+export default function createDialog(type_='alert') {
+  const _showing = ref(false)
   const appearance = ref('')
+  const type = ref(type_)
   let resolvePromise = null
 
   // #region alert
   function alert() {
-    show.value = true
+    _showing.value = true
     appearance.value = 'alert'
     return new Promise((resolve) => {
       resolvePromise = resolve
@@ -17,7 +17,7 @@ export default function createDialog() {
   }
 
   function alertConfirm() {
-    show.value = false
+    _showing.value = false
     if (resolvePromise) {
       resolvePromise(true)
       resolvePromise = null
@@ -27,7 +27,7 @@ export default function createDialog() {
 
   // #region confirm
   function confirm() {
-    show.value = true
+    _showing.value = true
     appearance.value = 'confirm'
     return new Promise((resolve) => {
       resolvePromise = resolve
@@ -35,7 +35,7 @@ export default function createDialog() {
   }
 
   function confirmCancel() {
-    show.value = false
+    _showing.value = false
     if (resolvePromise) {
       resolvePromise(false)
       resolvePromise = null
@@ -43,7 +43,7 @@ export default function createDialog() {
   }
 
   function confirmConfirm() {
-    show.value = false
+    _showing.value = false
     if (resolvePromise) {
       resolvePromise(true)
       resolvePromise = null
@@ -53,7 +53,7 @@ export default function createDialog() {
 
   // #region prompt
   function prompt() {
-    show.value = true
+    _showing.value = true
     appearance.value = 'prompt'
     return new Promise((resolve) => {
       resolvePromise = resolve
@@ -61,7 +61,7 @@ export default function createDialog() {
   }
 
   function promptConfirm(content) {
-    show.value = false
+    _showing.value = false
     if (resolvePromise) {
       resolvePromise(content)
       resolvePromise = null
@@ -69,7 +69,7 @@ export default function createDialog() {
   }
 
   function promptCancel() {
-    show.value = false
+    _showing.value = false
     if (resolvePromise) {
       resolvePromise(null)
       resolvePromise = null
@@ -79,7 +79,7 @@ export default function createDialog() {
 
   // #region load
   function load() {
-    show.value = true
+    _showing.value = true
     appearance.value = 'load'
     return new Promise((resolve) => {
       resolvePromise = resolve
@@ -87,7 +87,7 @@ export default function createDialog() {
   }
 
   function loadComplete() {
-    show.value = false
+    _showing.value = false
     if (resolvePromise) {
       resolvePromise(true)
       resolvePromise = null
@@ -95,7 +95,7 @@ export default function createDialog() {
   }
 
   function loadCancel() {
-    show.value = false
+    _showing.value = false
     if (resolvePromise) {
       resolvePromise(false)
       resolvePromise = null
@@ -103,10 +103,23 @@ export default function createDialog() {
   }
   // #endregion
 
+  function show() {
+    if (type == 'alert') {
+      alert()
+    } else if (type == 'confirm') {
+      confirm()
+    } else if (type == 'prompt') {
+      prompt()
+    } else if (type == 'load') {
+      load()
+    }
+  }
+
   return {
-    show,
-    title,
+    _showing,
     appearance,
+    type,
+    show,
     alert,
     alertConfirm,
     confirm,

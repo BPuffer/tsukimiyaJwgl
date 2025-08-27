@@ -108,6 +108,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import DataModel from '@/models/DataModel'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 const props = defineProps({
   showDetails: Boolean
@@ -141,6 +143,7 @@ const filterTipWindowOpening = ref(false)
 
 // 调试器
 const onDebug = computed(() => filterExpression.value == "!debug")
+const onAdminEntry = computed(() => filterExpression.value == "Sherbet Lemon")
 const debugExpression = ref('')
 const debugValue = ref('')
 const debugCommit = () => {
@@ -175,6 +178,11 @@ watch(filterExpression, onFilterUpdate)
 
 // 筛选表达式提示窗口
 const openFilterTipWindow = () => {
+  if (onAdminEntry.value) {
+    router.push({ name: 'madmin' })
+    return
+  }
+
   filterTipWindowOpening.value = true
   if (onDebug.value) { debugCommit() }
 }

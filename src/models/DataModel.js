@@ -3,9 +3,8 @@ import { VERSION_INT, versionInt, LICENSE_VERSION_INT } from '@/models/version.j
 
 // 配置
 // 代理服务器URL，用于发送代理请求，如proxy.tsuimiya.site
-const PROXY_URL = import.meta.env.VITE_PROXY_DOMAIN || "192.168.43.88:20081";
-// 是否使用HTTPS连接。控制代理本身使用HTTPS连接。
-const PROXY_HTTPS = "[DEPRECATED] env.VITE_PROXY_HTTPS"
+const PROXY_URL = import.meta.env.VITE_PROXY_DOMAIN || "proxy.tsukimiya.site";  // 192.168.43.88:20081
+console.log(`使用服务器 ${PROXY_URL}`)
 
 const PROXY_PATH = 'proxy';  // 代理路径常量
 const PROXY_PROTOCOL = window.location.protocol + "//";
@@ -51,10 +50,11 @@ function checkResponse(response) {
   return response;
 }
 
-function rethrow(err) {
-  if (err.message.includes("Failed to fetch")) { throw new Error(`不预期的无法连接错误。\n可能是后端代理服务器未启用`) }
+function rethrow(err, log) {
   if (err.message.includes("[SOLVED]")) { throw new Error(err.message.slice(8)) }
-  throw new Error(`不预期的错误：${err.message}。<br>请将此界面截图及最近操作回报给开发者。<br>(vx:mcpuffer)`);
+  if (log) new DataModel().debug = log
+  if (err.message.includes("Failed to fetch")) { throw new Error(`连接失败(${err.message}): ${err}`) }
+  throw new Error(`连接失败(${err.message}): ${err}`);
 }
 
 class JWXT {
@@ -74,16 +74,21 @@ class JWXT {
 
   // 登录
   async login() {
+    let log = "login..."
     console.debug(`教务系统实例尝试开始登录: ${this.username}`);
+    log += `L`
     try {
       // 步骤1: 获取初始Cookie
       console.debug(`- 获取初始Cookie: ${this.JWGL_URL}`);
+      log += `C`
       const jwxtInitPromise = fetch(proxyTo(this.JWGL_URL), {
         credentials: 'include',
       }).then(response => { return checkResponse(response); });
 
       // 步骤2: 获取登录页面和salt
       console.debug(`- 获取登录页面和salt: ${this.AUTH_URL}/authserver/login`);
+      log += `P`
+
       const loginParams = new URLSearchParams({ service: this.JWGL_AUTH_APP });
       const loginUrl = `${this.AUTH_URL}/authserver/login?${loginParams}`;
       const loginResponse = await fetch(proxyTo(loginUrl), {
@@ -93,6 +98,7 @@ class JWXT {
       if (loginResponse.url.includes('xsMain.jsp')) {
         this._loggedIn = true;
         console.debug(`- 备登录成功: ${loginResponse.url}`);
+        log += `B`
         return true;
       }
       const loginHtml = await loginResponse.text();
@@ -107,6 +113,7 @@ class JWXT {
 
       // 步骤3: 检查是否需要验证码
       console.debug(`- 检查是否需要验证码: ${this.AUTH_URL}/authserver/checkNeedCaptcha.htl`);
+      log += `T`
       const captchaUrl = `${this.AUTH_URL}/authserver/checkNeedCaptcha.htl`;
       const captchaParams = new URLSearchParams({
         username: this.username,
@@ -116,12 +123,13 @@ class JWXT {
         credentials: 'include'
       }).then(response => { return checkResponse(response); });
       const captchaData = await captchaResponse.json();
-      if (captchaData.isNeed) { throw new Error("需要验证码。去官网登录一下就行了。只登录可以手机。"); }
+      if (captchaData.isNeed) { throw new Error("请先前往 authserver.yku.edu.cn 进行一次登录"); }
 
       await jwxtInitPromise;
 
       // 步骤4: 准备登录数据
       console.debug(`- 准备登录数据: ${this.AUTH_URL}/authserver/login`);
+      log += `D`
       const execution = formEle.querySelector('input[name="execution"]').value;
       const formData = new URLSearchParams();
       formData.append('username', this.username);
@@ -135,6 +143,7 @@ class JWXT {
 
       // 步骤5: 提交登录请求
       console.debug(`- 提交登录请求: ${loginUrl}`);
+      log += `R`
       let loginResult = await fetch(proxyTo(loginUrl), {
         method: 'POST',
         headers: {
@@ -142,11 +151,11 @@ class JWXT {
         },
         body: formData,
         credentials: 'include'
-        // redirect: 'manual'
       }).then(response => { return checkResponse(response); });
 
       // 步骤6: 验证登录结果
       console.debug(`- 验证登录结果: ${loginResult.url}`);
+      log += `V`
       if (loginResult.url.includes('xsMain.jsp')) {
         this._loggedIn = true;
         return true;
@@ -159,7 +168,7 @@ class JWXT {
         throw new Error(`登录失败。URL: ${loginResult.url}`);
       }
     } catch (err) {
-      rethrow(err);
+      rethrow(err, log);
     }
   }
 
@@ -170,7 +179,7 @@ class JWXT {
       const logoutUrl = `${this.AUTH_URL}/authserver/logout?service=${encodeURIComponent(this.JWGL_URL)}`;
       await fetch(proxyTo(logoutUrl), {
         credentials: 'include'
-      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "logout...") });
     } catch (error) {
       console.error("退出登录过程中出错:", error);
       // 不传播异常，因为此方法本身就是安全方法
@@ -190,7 +199,7 @@ class JWXT {
       const pyfaUrl = `${this.JWGL_URL}/jsxsd/pyfa/pyfa_query`;
       const pyfaResponse = await fetch(proxyTo(pyfaUrl), {
         credentials: 'include'
-      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "getGrades...pyfa") });
       const pyfaHtml = await pyfaResponse.text();
       const pyfaDoc = new DOMParser().parseFromString(pyfaHtml, 'text/html');
       const pyfaTable = pyfaDoc.getElementById('dataList');
@@ -213,7 +222,7 @@ class JWXT {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         credentials: 'include'
-      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "getGrades...cjcx") });
 
       const cjcxHtml = await cjcxResponse.text();
       const cjcxDoc = new DOMParser().parseFromString(cjcxHtml, 'text/html');
@@ -260,7 +269,7 @@ class JWXT {
         },
         body: formData,
         credentials: 'include'
-      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "getGrades...xsksap") });
 
       const xsksapHtml = await xsksapResponse.text();
       const xsksapDoc = new DOMParser().parseFromString(xsksapHtml, 'text/html');
@@ -359,7 +368,7 @@ class JWXT {
         },
         body: formData,
         credentials: 'include'
-      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, `getSchedule...xskb@${week}`) });
 
       if (!response.ok) {
         throw new Error(`请求失败: ${response.status}`);
@@ -595,7 +604,7 @@ class JWXT {
       },
       body: formData,
       credentials: 'include'
-    }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+    }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "getScheduleAll...xskb(-)") });
 
     if (!response.ok) {
       throw new Error(`请求失败: ${response.status}`);
@@ -643,7 +652,8 @@ class JWXT {
       const infoUrl = `${this.JWGL_URL}/jsxsd/framework/xsMain_new.jsp?t1=1`;
       const infoResponse = await fetch(proxyTo(infoUrl), {
         credentials: 'include'
-      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "getProfile...xsMain_new.jsp") });
+
 
       if (!infoResponse.ok) {
         throw new Error(`获取个人信息失败: ${infoResponse.status}`);
@@ -685,7 +695,7 @@ class JWXT {
       const photoUrl = `${this.JWGL_URL}/jsxsd/grxx/xszpLoad`;
       const photoResponse = await fetch(proxyTo(photoUrl), {
         credentials: 'include'
-      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err) });
+      }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "getProfile...xszpLoad") });
 
       // 4. 转换为Base64编码
       if (photoResponse.ok) {
@@ -830,6 +840,10 @@ class DataModel {
   */
 
   constructor() {
+    if (!DataModel.instance) {
+      DataModel.instance = this;
+    }
+
     this.proxy = PROXY_URL;
     this.lastSemester = "2024-2025-2";
     this.currentSemester = "2025-2026-1";
@@ -843,6 +857,9 @@ class DataModel {
     this.updater = new DMUpdateModel(this);
     this.serverUpdating = false;
     this.serverUpdatePromise = null;
+    this.debug = "0xDEADBEEF";
+
+    return DataModel.instance;
   }
 
   init() {

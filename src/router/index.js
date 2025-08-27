@@ -89,6 +89,12 @@ const routes = [
     component: () => import('@/views/mobile/MConfig.vue'),
     meta: { title: '设置' }
   },
+  {
+    path: '/m/sherbet-lemon',
+    name: 'madmin',
+    component: () => import('@/views/mobile/MAdmin.vue'),
+    meta: { title: '管理员' }
+  },
 
   // #endregion
 
