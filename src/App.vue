@@ -1,8 +1,12 @@
 <template>
-  <NavMobile v-if="isMobile" />
-  <NavDesktop v-if="!isMobile" />
-  <div class="page-container">
-    <router-view v-if="isAllReady" class="content" />
+  <div class="global-container">
+    <div class="global-view-container">
+      <NavMobile v-if="isMobile" />
+      <NavDesktop v-if="!isMobile" />
+      <div class="page-container">
+        <router-view v-if="isAllReady" class="content" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -21,7 +25,9 @@ const route = useRoute();
 const router = useRouter();
 const isAllReady = ref(false)
 
-const checkDeviceType = () => {
+const IsMobile = () => {
+  return true;  // 暂时不支持电脑。
+
   const userChoice = localStorage.getItem('deviceType');
   if (userChoice) return userChoice === 'mobile';
 
@@ -31,7 +37,7 @@ const checkDeviceType = () => {
 
 onMounted(async () => {
   console.log(`欢迎来到月宫の小站！翻阅源码请前往${REPO_URL}`)  // vite.config.js/build.terserOptions.compress.drop_console: false
-  isMobile.value = checkDeviceType();
+  isMobile.value = IsMobile();
   await router.isReady();
   if (isMobile.value && !route.fullPath.startsWith("/m")) {
     router.push({ name: 'm' });
@@ -44,7 +50,7 @@ onMounted(async () => {
 
 <style>
 body {
-  background-image: url('@/assets/img/mbg.jpg');
+  background-image: linear-gradient(180deg, #ffffff, #e6e6e6);
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
@@ -53,21 +59,17 @@ body {
   max-width: 100%;
   height: 100%;
 }
-/* body::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.5);
-  z-index: -1;
-} */
 
-@media (min-width: 768px) {
-  body {
-    background-image: url('@/assets/img/mbg.jpg');
-  }
+.global-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 如果大于768px，限制宽度 */
+.global-view-container {
+  width: 100%;
+  max-width: 425px;
 }
 
 .content {

@@ -141,9 +141,9 @@ const appliedExpression = ref('')
 const expressionConditions = ref([])
 const filterTipWindowOpening = ref(false)
 
-// 调试器
-const onDebug = computed(() => filterExpression.value == "!debug")
+// 调试器和管理员入口
 const onAdminEntry = computed(() => filterExpression.value == "Sherbet Lemon")
+const onDebug = computed(() => filterExpression.value == "!debug" && false)
 const debugExpression = ref('')
 const debugValue = ref('')
 const debugCommit = () => {
@@ -551,7 +551,8 @@ const getScoreClass = (score) => {
 }
 
 .filter-tips {
-  width: 80vw;
+  width: 80%;
+  max-width: 614px;  /* 768x0.8 */
   line-height: 1.6;
   padding: 20px;
   background: #f9f9f9;

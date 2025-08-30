@@ -1,32 +1,19 @@
 <template>
-  <div class="view-container">
+  <div class="placeholder-container">
     <h1>{{ pageTitle }}</h1>
-    <div class="content-placeholder">
-      <p>{{ pageTitle }}功能开发中...</p>
-    </div>
+    <p>本页面为电脑端页面预留，开发完成前请使用手机访问。</p>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-
 const route = useRoute();
 const pageTitle = computed(() => route.meta.title);
 </script>
 
 <style scoped>
-.view-container {
+.placeholder-container {
   padding: 20px;
-}
-
-.content-placeholder {
-  height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f9f9f9;
-  border-radius: 10px;
-  margin-top: 20px;
 }
 </style>

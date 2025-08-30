@@ -1,101 +1,111 @@
 <template>
   <div class="settings-container">
-    <!-- 背景设置 -->
-    <div class="setting-item">
-      <div class="option-items">
-        <div class="option" :class="{ disabled: bgType !== 'default-m1' }">
-          <label>
-            <div class="preview">
-              <img src="/img/mbg1.jpg" alt="默认背景1">
-            </div>
-            <input type="radio" v-model="bgType" value="default-m1">
-          </label>
-        </div>
-
-        <div class="option" :class="{ disabled: bgType !== 'default-m2' }">
-          <label>
-            <div class="preview">
-              <img src="/img/mbg2.jpg" alt="默认背景2">
-            </div>
-            <input type="radio" v-model="bgType" value="default-m2">
-          </label>
-        </div>
-
-        <div class="option" :class="{ disabled: bgType !== 'default-m3' }">
-          <label>
-            <div class="preview">
-              <img src="/img/mbg3.jpg" alt="默认背景3">
-            </div>
-            <input type="radio" v-model="bgType" value="default-m3">
-          </label>
-        </div>
-
-        <div class="option" :class="{ disabled: bgType !== 'default-m4' }">
-          <label>
-            <div class="preview">
-              <img src="/img/mbg4.jpg" alt="默认背景4">
-            </div>
-            <input type="radio" v-model="bgType" value="default-m4">
-          </label>
-        </div>
-
-
-        <div class="option" :class="{ disabled: bgType !== 'custom' }">
-          <label>
-            <div class="preview">
-              <img v-if="bgImg" :ref="el => bgImgRef = el" :src="bgImg" alt="自定义背景">
-              <div v-else @click="selectCustomImage" class="placeholder">
-                <span>选择自定义背景</span>
+    <div class="settings-items-container">
+      <!-- 背景设置 -->
+      <div class="setting-item">
+        <div class="option-items">
+          <div class="option" :class="{ disabled: bgType !== 'default-m1' }">
+            <label>
+              <div class="preview">
+                <img src="/img/mbg1.jpg" alt="默认背景1">
               </div>
-            </div>
-            <input type="radio" v-model="bgType" value="custom" :disabled="!bgImg">
-          </label>
-          <input type="file" ref="bgFileInput" accept="image/*" style="display: none" @change="handleFileUpload">
+              <input type="radio" v-model="bgType" value="default-m1">
+            </label>
+          </div>
+
+          <div class="option" :class="{ disabled: bgType !== 'default-m2' }">
+            <label>
+              <div class="preview">
+                <img src="/img/mbg2.jpg" alt="默认背景2">
+              </div>
+              <input type="radio" v-model="bgType" value="default-m2">
+            </label>
+          </div>
+
+          <div class="option" :class="{ disabled: bgType !== 'default-m3' }">
+            <label>
+              <div class="preview">
+                <img src="/img/mbg3.jpg" alt="默认背景3">
+              </div>
+              <input type="radio" v-model="bgType" value="default-m3">
+            </label>
+          </div>
+
+          <div class="option" :class="{ disabled: bgType !== 'default-m4' }">
+            <label>
+              <div class="preview">
+                <img src="/img/mbg4.jpg" alt="默认背景4">
+              </div>
+              <input type="radio" v-model="bgType" value="default-m4">
+            </label>
+          </div>
+
+
+          <div class="option" :class="{ disabled: bgType !== 'custom' }">
+            <label>
+              <div class="preview">
+                <img v-if="bgImg" :ref="el => bgImgRef = el" :src="bgImg" alt="自定义背景">
+                <div v-else @click="selectCustomImage" class="placeholder">
+                  <span>选择自定义背景</span>
+                </div>
+              </div>
+              <input type="radio" v-model="bgType" value="custom" :disabled="!bgImg">
+            </label>
+            <input type="file" ref="bgFileInput" accept="image/*" style="display: none" @change="handleFileUpload">
+          </div>
         </div>
       </div>
+
+      <!-- 许可协议 -->
+      <div class="setting-item">
+        <div class="setting-item-actionbtn" @click="openLicense">
+          许可协议
+        </div>
+        <MDialog :dialog="dialogLicense" title="许可协议" confirmText="同意" cancelText="不同意并清空数据">
+          <iframe 
+            src="/license-vlast.html" 
+            frameborder="0"
+            style="width:100%; height:400px"
+          ></iframe>
+          <p>协议版本：<a :href="`/license-v${LICENSE_VERSION}.html`" target="_blank">v{{ LICENSE_VERSION }}</a></p>
+        </MDialog>
+      </div>
+      
+      <!-- 清空数据 -->
+      <div class="setting-item">
+        <div class="setting-item-actionbtn" @click="clearAllData">
+          清空本地所有数据
+        </div>
+        <MDialog :dialog="dialogClearData" title="清空本地所有数据">
+          <p>确定要清空本地所有数据吗？此操作不可撤销！</p>
+        </MDialog>
+      </div>
+      
+      <!-- 测试按钮 -->
+      <!-- <div class="setting-item">
+        <div class="setting-item-actionbtn" @click="testBtn">
+          测试按钮
+        </div>
+        <MDialog :dialog="dialogTest" title="测试按钮" :loadCancelable="false">
+          <p>测试按钮</p>
+          <table>
+            <tr><th>姓名</th><th>年龄</th></tr>
+            <tr><td>张三</td><td>18</td></tr>
+          </table>
+          <div v-html="testhtml"></div>
+          <u @click="dialogTest.loadComplete()">加载完成</u>
+          <u @click="dialogTest.loadCancel()">加载取消</u>
+        </MDialog>
+      </div> -->
     </div>
 
-    <!-- 许可协议 -->
-    <div class="setting-item">
-      <div class="setting-item-actionbtn" @click="openLicense">
-        许可协议
+    <!-- logo -->
+    <div class="setting-logo-container">
+      <img class="setting-logo-img" src="/img/logo.png" alt="logo">
+      <div class="setting-logo-text">
+        月宫の小站 v{{ VERSION }}
       </div>
-      <MDialog :dialog="dialogLicense" title="许可协议" confirmText="同意" cancelText="不同意">
-        <iframe 
-          src="/license-vlast.html" 
-          frameborder="0"
-          style="width:100%; height:400px"
-        ></iframe>
-        <p>协议版本：<a :href="`/license-v${LICENSE_VERSION}.html`" target="_blank">v{{ LICENSE_VERSION }}</a></p>
-      </MDialog>
     </div>
-    
-    <!-- 清空数据 -->
-    <div class="setting-item">
-      <div class="setting-item-actionbtn" @click="clearAllData">
-        清空本地所有数据
-      </div>
-      <MDialog :dialog="dialogClearData" title="清空本地所有数据">
-        <p>确定要清空本地所有数据吗？此操作不可撤销！</p>
-      </MDialog>
-    </div>
-    
-    <!-- 测试按钮 -->
-    <!-- <div class="setting-item">
-      <div class="setting-item-actionbtn" @click="testBtn">
-        测试按钮
-      </div>
-      <MDialog :dialog="dialogTest" title="测试按钮" :loadCancelable="false">
-        <p>测试按钮</p>
-        <table>
-          <tr><th>姓名</th><th>年龄</th></tr>
-          <tr><td>张三</td><td>18</td></tr>
-        </table>
-        <div v-html="testhtml"></div>
-        <u @click="dialogTest.loadComplete()">加载完成</u>
-        <u @click="dialogTest.loadCancel()">加载取消</u>
-      </MDialog>
-    </div> -->
   </div>
 </template>
 
@@ -106,7 +116,7 @@ import Hammer from 'hammerjs'
 import StyleManager from '@/models/styleManager.js';
 import MDialog from '@/components/MDialog.vue'
 import createDialog from '@/models/dialogs.js'
-import { LICENSE_VERSION } from '../../models/version';
+import { VERSION, LICENSE_VERSION } from '@/models/version';
 
 // #region 背景设置
 const bgFileInput = ref(null)
@@ -172,7 +182,6 @@ const dialogClearData = createDialog()
 async function clearAllData() {
   if (await dialogClearData.confirm()) {
     await DataModel.clearLocal()
-    // 导向根
     window.location.href = '/'
   }
 }
@@ -184,8 +193,10 @@ async function openLicense() {
   const confirmLicenseWindow = dialogLicense.confirm()
   if (await confirmLicenseWindow) {
     DataModel.agreeLicense()
-  } else {
-    DataModel.clearLicense()
+  } else if (await dialogClearData.confirm()) {  // 至尊优雅连问模态框。
+    DataModel.clearLicense()  // 发明这个对话框的人真是天才。
+    DataModel.clearLocal()
+    window.location.href = '/'
   }
 }
 // #endregion 许可协议
@@ -219,9 +230,19 @@ onUnmounted(() => {
 <style scoped>
 /* #region 设置主框架 */
 .settings-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+
   background-color: #fff7f7c0;
   padding: 16px;
   box-sizing: border-box;
+}
+
+.settings-items-container {
+  display: flex;
+  flex-direction: column;
 }
 
 .setting-item {
@@ -320,5 +341,29 @@ onUnmounted(() => {
 .disabled .preview {
   cursor: not-allowed;
 }
+
+/* #region logo区 */
+.setting-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.setting-logo-img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.setting-logo-text {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+/* #endregion */
+
+
 
 </style>

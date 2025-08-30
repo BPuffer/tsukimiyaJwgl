@@ -564,7 +564,9 @@ onMounted(() => {
   bottom: 0;
   right: 0;
   width: 90vw;
+  max-width: 400px;
   height: 90vw;
+  max-height: 400px;
   z-index: 5;
   pointer-events: none;
   /* background-color: #ff05; */

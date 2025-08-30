@@ -9,7 +9,7 @@ load_dotenv('.env')
 
 class Config:
     # 环境配置
-    ACCESS_ORIGINS = list(map(str.strip, os.environ.get("ACCESS_ORIGINS", '192.168.43.88;localhost;yku.tsukimiya.site;82.156.135.94').split(';')))
+    ACCESS_ORIGINS = list(map(str.strip, os.environ.get("ACCESS_ORIGINS", '192.168.43.88;localhost;yku.tsukimiya.site').split(';')))
     PORT = int(os.getenv('PORT', 20081))
     SSL_VERIFY_TARGET = os.getenv('SSL_VERIFY_TARGET', 'False').lower() == 'true'
     if not SSL_VERIFY_TARGET:
