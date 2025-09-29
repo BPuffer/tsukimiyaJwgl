@@ -56,7 +56,7 @@
           </button>
         </div>
       </div>
-      <MDialog :dialog="dialogPwd" title="输入 {{ dataModel.user.学生姓名 }} 的密码"></MDialog>
+      <MDialog :dialog="dialogPwd" :title="`输入 ${dataModel.user?.profile?.学生姓名 || '<未登录>'} 的密码`"></MDialog>
       <MDialog :dialog="dialogRefreshLicConfirm" title="刷新需要同意最新用户许可协议" confirmText="同意" cancelText="不同意">
         <iframe 
           src="/license-vlast.html" 

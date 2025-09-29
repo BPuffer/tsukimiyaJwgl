@@ -300,7 +300,6 @@ let setScrollTimeout = null  // 滚动锁延时释放
 
 // 开始拖拽时
 const onDragStart = (event) => {
-  event.preventDefault()
   document.body.style.overflow = 'hidden'
   if (setScrollTimeout) {
     clearTimeout(setScrollTimeout)
@@ -362,8 +361,6 @@ const showMyscore = ref(false)
 const scoreModel = ref(new ScoreModel());
 function openMyscore() {
   scoreModel.value = new ScoreModel(DataModel.user?.client?.scores || DataModel?.visitor?.scores || []);
-  console.log(scoreModel.value.getAllScores());
-
   showMyscore.value = true;
 }
 

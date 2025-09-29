@@ -1,5 +1,6 @@
 import encryptPassword from '@/module/encrypt.js';
 import { VERSION_INT, versionInt, LICENSE_VERSION_INT } from '@/models/version.js';
+import constSemesters from '@/models/constSemesters.js';
 
 // 配置
 // 代理服务器URL，用于发送代理请求，如proxy.tsuimiya.site
@@ -42,6 +43,11 @@ const ERROR_MSGS = {
   502: '[SOLVED]服务器掉线。\n这通常不是你的问题。你可以尝试联系网站管理员。\n(vx:mcpuffer)',
 }
 
+const SEMESTER_START_DATE = {
+  "2024-2025-2": "2025-03-04",
+  "2025-2026-1": "2025-09-01"
+}
+
 function checkResponse(response) {
   if (response.status == 502) throw new Error(ERROR_MSGS[502]);
   if (response.status == 429) throw new Error(ERROR_MSGS[429]);
@@ -50,11 +56,20 @@ function checkResponse(response) {
   return response;
 }
 
-function rethrow(err, log) {
-  if (err.message.includes("[SOLVED]")) { throw new Error(err.message.slice(8)) }
+function rethrow(err, log, solved=false) {
+  if (solved) {
+    throw new Error(err.message)
+  }
   if (log) new DataModel().debug = log
-  if (err.message.includes("Failed to fetch")) { throw new Error(`连接失败(${err.message}): ${err}`) }
-  throw new Error(`连接失败(${err.message}): ${err}`);
+  if (err.message.includes("Failed to fetch")) { throw new Error(`连接失败。这表示我们现在无权获取详细信息: ${err}`) }
+  console.error(`未处理的错误: ${err}`);
+  throw new Error(`未知错误`);
+}
+
+function SolvedError(message) {
+  const err = new Error(message);
+  err.solved = true;
+  return err;
 }
 
 class JWXT {
@@ -62,10 +77,6 @@ class JWXT {
     this.JWGL_URL = "https://jwgl.yku.edu.cn";
     this.JWGL_AUTH_APP = "http://jwgl.yku.edu.cn/sso.jsp";
     this.AUTH_URL = "https://authserver.yku.edu.cn";
-    this.SEMESTER_START_DATE = {
-      "2024-2025-2": "2025-03-04",
-      "2025-2026-1": "2025-09-01"
-    }
 
     this.username = username;
     this.password = password;
@@ -90,8 +101,8 @@ class JWXT {
       log += `P`
 
       const loginParams = new URLSearchParams({ service: this.JWGL_AUTH_APP });
-      const loginUrl = `${this.AUTH_URL}/authserver/login?${loginParams}`;
-      const loginResponse = await fetch(proxyTo(loginUrl), {
+      const finalUrl = `${this.AUTH_URL}/authserver/login?${loginParams}`;
+      const loginResponse = await fetch(proxyTo(finalUrl), {
         credentials: 'include'
       }).then(response => { return checkResponse(response); });
 
@@ -106,9 +117,9 @@ class JWXT {
       const loginDoc = parser.parseFromString(loginHtml, 'text/html');
       const formEleDesktoop = loginDoc.getElementById('pwdFromId');  // 电脑端
       const formEle = formEleDesktoop || loginDoc.getElementById('pwdLoginDiv');  // 手机端
-      if (!formEle) { throw new Error("返回页面结构不预期") }
+      if (!formEle) { throw new SolvedError("官网页面可能变动，请等待修复或联系开发者(113)"); }
       const salt = formEle.querySelector('#pwdEncryptSalt')?.value;
-      if (!salt) { throw new Error("无法获取加密盐") }
+      if (!salt) { throw new SolvedError("官网页面可能变动，请等待修复或联系开发者(115)"); }
 
 
       // 步骤3: 检查是否需要验证码
@@ -123,7 +134,7 @@ class JWXT {
         credentials: 'include'
       }).then(response => { return checkResponse(response); });
       const captchaData = await captchaResponse.json();
-      if (captchaData.isNeed) { throw new Error("请先前往 authserver.yku.edu.cn 进行一次登录"); }
+      if (captchaData.isNeed) { throw new SolvedError("需要验证一下验证码。请先前往 authserver.yku.edu.cn 进行一次登录。手机就行。"); }
 
       await jwxtInitPromise;
 
@@ -142,9 +153,9 @@ class JWXT {
       formData.append('execution', execution);
 
       // 步骤5: 提交登录请求
-      console.debug(`- 提交登录请求: ${loginUrl}`);
+      console.debug(`- 提交登录请求: ${finalUrl}`);
       log += `R`
-      let loginResult = await fetch(proxyTo(loginUrl), {
+      let loginResult = await fetch(proxyTo(finalUrl), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -156,19 +167,25 @@ class JWXT {
       // 步骤6: 验证登录结果
       console.debug(`- 验证登录结果: ${loginResult.url}`);
       log += `V`
-      if (loginResult.url.includes('xsMain.jsp')) {
+      const resultFinalUrl = loginResult.url
+      if (resultFinalUrl.includes('xsMain.jsp')) {
         this._loggedIn = true;
         return true;
-      } else {
+      } else { 
         if (loginResult.status == 401) {
-          throw new Error(`用户名或密码错误`);
+          throw new SolvedError(`用户名或密码错误`);
         } else if (loginResult.status >= 500) {
-          throw new Error(`会话超时。请尝试刷新页面。多次刷新无果可能是教务官网似了。`);
+          throw new SolvedError(`会话超时。请尝试刷新页面。多次刷新无果可能是教务官网似了。`);
         }
-        throw new Error(`登录失败。URL: ${loginResult.url}`);
+        if (resultFinalUrl.includes("authserver/login")) {
+          throw new SolvedError(`请尝试启用Cookie`);
+        }
+        throw new SolvedError(`登录失败。URL: ${loginResult.url}`);
       }
     } catch (err) {
-      rethrow(err, log);
+      console.error(err)
+      const solved = err.solved || false;
+      rethrow(err, log, solved);
     }
   }
 
@@ -216,11 +233,18 @@ class JWXT {
 
       // 2. 获取考试成绩
       const cjcxUrl = `${this.JWGL_URL}/jsxsd/kscj/cjcx_list`;
+      const cjcxFormData = new URLSearchParams({
+        kksj: '',
+        kcxz: '',
+        kcmc: '',
+        xsfs: 'all'
+      });
       const cjcxResponse = await fetch(proxyTo(cjcxUrl), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
+        body: cjcxFormData,
         credentials: 'include'
       }).then(response => { return checkResponse(response); }).catch(err => { rethrow(err, "getGrades...cjcx") });
 
@@ -259,7 +283,7 @@ class JWXT {
       // 3. 获取考试安排
       const xsksapUrl = `${this.JWGL_URL}/jsxsd/xsks/xsksap_list`;
       const formData = new URLSearchParams({
-        xnxqid: semester || this.dm.currentSemester
+        xnxqid: semester || constSemesters.usingGradesSemester,
       });
 
       const xsksapResponse = await fetch(proxyTo(xsksapUrl), {
@@ -352,7 +376,7 @@ class JWXT {
   // 获取课表
   async getSchedule(semester) {
     // 常量定义
-    const START_DATE = new Date(this.SEMESTER_START_DATE[semester]);
+    const START_DATE = new Date(SEMESTER_START_DATE[semester]);
     const TOTAL_WEEKS = 25; // 总周数
 
     // 请求和响应处理函数
@@ -795,7 +819,7 @@ class DMUpdateModel {
   }
 
   async updateGrades(semester) {
-    this.dm.user.exam = await this.jwxt.getGrades(semester || this.dm.lastSemester);
+    this.dm.user.exam = await this.jwxt.getGrades(semester || constSemesters.usingGradesSemester);
     this.dm.user.lastUpdate = new Date().toISOString();
   }
 
@@ -805,7 +829,7 @@ class DMUpdateModel {
   }
 
   async updateSchedule(semester) {
-    this.dm.user.schedule = await this.jwxt.getSchedule(semester || this.dm.currentSemester);
+    this.dm.user.schedule = await this.jwxt.getSchedule(semester || constSemesters.usingScheduleSemester);
     this.dm.user.lastUpdate = new Date().toISOString();
   }
 
@@ -845,8 +869,6 @@ class DataModel {
     }
 
     this.proxy = PROXY_URL;
-    this.lastSemester = "2024-2025-2";
-    this.currentSemester = "2025-2026-1";
     this.currentLoginUser = null;
     this.password = null;  // 临时存密码
     this.allLoginUsers = {};

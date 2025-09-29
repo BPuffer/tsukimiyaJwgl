@@ -1,10 +1,10 @@
-const MAJOR_VERSION = 1;
-const MINOR_VERSION = 2;
-const PATCH_VERSION = 0;
+import { version } from '../../package.json';
+
+const [MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION] = version.split('.').map(Number);
 const BUILD_VERSION = 0;
 
-const MAJOR_LICENSE_VERSION = MAJOR_VERSION;
-const MINOR_LICENSE_VERSION = MINOR_VERSION;
+const MAJOR_LICENSE_VERSION = 0;
+const MINOR_LICENSE_VERSION = 1;
 
 
 function versionStr(ma, mi, pa, bu) {

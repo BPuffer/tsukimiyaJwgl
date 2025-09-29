@@ -87,44 +87,46 @@ const now = ref(new Date());
 // 过滤并处理考试数据
 const processedExams = computed(() => {
   return (DataModel.user?.exam?.subjects || [])
-    .filter(exam => exam.考试安排 && exam.考试安排.考试时间)
+    .filter(exam => exam.考试安排 && exam.考试安排.考试时间)  // 2025-09-18 18:00~20:00
     .map(exam => {
       // 提取考试开始时间
-      const timePart = exam.考试安排.考试时间.split('~')[0];
-      const examDate = new Date(timePart.replace(/-/g, '/'));
+      const timePart = exam.考试安排.考试时间.split('~')[0];  // 2025-09-18 18:00
+      const examDate = new Date(timePart.replace(/-/g, '/'));  // 2025/09/10 15:20
       const diffTime = examDate - now.value;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
       let countdownText = '';
       let status = '';
-      let daysUntil = diffDays;
 
       if (diffTime > 0) {
         status = 'upcoming';
-        if (diffDays === 1) {
+        if (diffDays === 2) {
+          countdownText = '后天考试';
+        } else if (diffDays === 1) {
           countdownText = '明天考试';
-          daysUntil = 1;
         } else if (diffDays === 0) {
-          countdownText = '今天考试';
-          daysUntil = 0;
+          // countdownText = '今天考试';
+          // 不跨天
+          const diffHours = diffTime / (1000 * 60 * 60);
+          if (diffHours >= 1) {
+            countdownText = `${Math.floor(diffHours)}小时后`;
+          } else {
+            countdownText = '1小时内';
+          }
         } else {
           countdownText = `${diffDays}天后`;
-          // 计算进度条（最多显示30天内的进度）
-          daysUntil = diffDays;
         }
       } else {
         status = 'completed';
         const daysPassed = Math.floor(-diffTime / (1000 * 60 * 60 * 24));
-        countdownText = daysPassed === 0 ? '今天完成' : `${daysPassed}天前`;
-        daysUntil = -daysPassed;
+        countdownText = daysPassed === 0 ? '今天考完' : `${daysPassed}天前`;
       }
 
       return {
         ...exam,
         examDate,
         countdownText,
-        status,
-        daysUntil
+        status
       };
     });
 });

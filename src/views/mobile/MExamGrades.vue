@@ -135,6 +135,13 @@ const uniqueTerms = computed(() => {
   return Array.from(terms).sort().reverse()
 })
 
+// 在组件挂载时设置默认选中的学期
+onMounted(() => {
+  if (uniqueTerms.value.length > 0) {
+    selectedTerm.value = uniqueTerms.value[0]
+  }
+})
+
 // 复杂表达式筛选
 const filterExpression = ref('')
 const appliedExpression = ref('')

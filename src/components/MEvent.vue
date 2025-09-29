@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { marked } from 'marked'
 import '@/assets/markdown-styles.css';
 
@@ -18,6 +18,10 @@ const props = defineProps({
   event: {
     type: Object,
     default: () => ({})
+  },
+  sentinelHeight: {
+    type: String,
+    default: "100vw"
   }
 })
 
@@ -29,6 +33,15 @@ const renderedDescription = computed(() => {
   }
   return ''
 })
+
+// #region 初始化
+onMounted(() => {
+  nextTick(() => {
+    document.querySelector('.current-description-sentinel').style.height = props.sentinelHeight
+  })
+})
+// #endregion
+
 </script>
 
 <style scoped>

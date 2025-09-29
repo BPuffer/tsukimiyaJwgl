@@ -4,7 +4,7 @@ import time
 from flask import Blueprint, request, current_app
 from app.models import Announcement, Event, SuperUser
 from app.middleware import check_ip_limit
-from app.auth import auth_minlvl, verify
+from app.auth import auth_minlvl, get_current_bearer, verify
 from app.utils import generate_token, get_cors_headers, ResponseJson, has_all_keys, is_valid_date
 from app.extensions import db
 from app.const import Errors
@@ -244,14 +244,15 @@ def add_announcement():
     if ann_json['category'] not in ['normal', 'important', 'hidden']:
         return ResponseJson({"error": 1, "message": Errors.INVALID_PARAMETER + f"(category={ann_json['category']})"}, 400)
     
-    # 创建新公告
+    un, _ = get_current_bearer()
     new_ann = Announcement(
         title=ann_json['title'],  # type: ignore
         content=ann_json['content'],  # type: ignore
         date=ann_json['date'],  # type: ignore
         tag=ann_json['tag'],  # type: ignore
         hue=hue_int,  # type: ignore
-        category=ann_json['category']  # type: ignore
+        category=ann_json['category'],  # type: ignore
+        publisher=un,  # type: ignore
     )
     
     # 数据库操作
@@ -334,7 +335,7 @@ def del_announcement():
         return ResponseJson({"error": 1, "message": Errors.DB_ERROR}, 500)
 
 @api_bp.route('/modan', methods=['POST'])
-@auth_minlvl(2)
+@auth_minlvl(1)
 def mod_announcement():
     """
     POST /api/modan
@@ -384,6 +385,15 @@ def mod_announcement():
     ann = Announcement.query.get(ann_id_int)
     if not ann:
         return ResponseJson({"error": 1, "message": Errors.ANNOUNCEMENT_NOT_FOUND}, 400)
+    
+    # 检查权限：level1用户只能修改自己发布的公告
+    un, tk = get_current_bearer()  # current_user 现在是非空的
+    if ann.publisher and ann.publisher != un and verify(un, tk) == 1:
+        return ResponseJson({"error": 1, "message": Errors.FORBIDDEN}, 403)
+    
+    # 不设置新的发布者。发布者在发布之初就已经决定好了。
+    if not ann.publisher:
+        ann.publisher = un  # 兼容旧的数据库，旧的 publisher 字段可能为空
     
     # 验证更新字段
     allowed_fields = ['title', 'content', 'date', 'tag', 'hue', 'category']
@@ -478,12 +488,14 @@ def add_event():
         if not isinstance(eve_json[field], str) or not eve_json[field].isprintable():
             return ResponseJson({"error": 1, "message": Errors.INVALID_PARAMETER}, 400)
     
+    un, _ = get_current_bearer()
     new_event = Event(
         title=eve_json['title'],  # type: ignore
         description=eve_json['description'],  # type: ignore
         date_tag=eve_json['date_tag'],  # type: ignore
         timestamp=int(eve_json['timestamp']),  # type: ignore
         prevImg=eve_json['prevImg'],  # type: ignore
+        publisher=un,  # type: ignore
     )
     
     # 数据库操作
@@ -566,7 +578,7 @@ def del_event():
         return ResponseJson({"error": 1, "message": Errors.DB_ERROR}, 500)
 
 @api_bp.route('/modev', methods=['POST'])
-@auth_minlvl(2)
+@auth_minlvl(1)
 def mod_event():
     """
     POST /api/modev
@@ -601,6 +613,15 @@ def mod_event():
     event = Event.query.get(eve_id_int)
     if not event:
         return ResponseJson({"error": 1, "message": Errors.EVENT_NOT_FOUND}, 400)
+    
+    # 检查权限：level2用户只能修改自己发布的活动
+    un, tk = get_current_bearer()  # current_user 现在是非空的 
+    if event.publisher != un and verify(un, tk) == 1:
+        return ResponseJson({"error": 1, "message": Errors.FORBIDDEN}, 403)
+    
+    # 不设置新的发布者。发布者在发布之初就已经决定好了。
+    if not event.publisher:
+        event.publisher = un  # 兼容旧的数据库，旧的 publisher 字段可能为空
     
     eve_json = data['event']
     allowed_fields = ['title', 'description', 'date_tag', 'timestamp', 'prevImg']

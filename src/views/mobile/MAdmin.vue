@@ -99,7 +99,7 @@
             </div>
           </div>
         </form>
-        <button class="btn btn-primary btn-submit" @click="addanSubmit">确认添加</button>
+        <button class="btn btn-primary btn-submit" @click="addanSubmit">预览</button>
       </div>
       
       <!-- 删除公告 -->
@@ -160,11 +160,11 @@
                     <option value="important">重要</option>
                     <option value="hidden">隐藏</option>
                   </select>
-                </div>
+                </div> 
               </div>
             </div>
           </form>
-          <button class="btn btn-primary btn-submit" @click="modanSubmit">确认修改</button>
+          <button class="btn btn-primary btn-submit" @click="modanSubmit">预览修改</button>
         </div>
         <div v-else>
           等待数据加载…………
@@ -182,7 +182,7 @@
             <input type="url" class="form-input" v-model="addevFormData.prevImg" placeholder="thumb URL">
           </div>
         </form>
-        <button class="btn btn-primary btn-submit" @click="addevSubmit">确认添加</button>
+        <button class="btn btn-primary btn-submit" @click="addevSubmit">预览</button>
       </div>
       
       <!-- 删除活动 -->
@@ -239,7 +239,7 @@
               </div>
             </div>
           </form>
-          <button class="btn btn-primary btn-submit" @click="modevSubmit">确认修改</button>
+          <button class="btn btn-primary btn-submit" @click="modevSubmit">预览修改</button>
         </div>
         <div v-else>
           等待数据加载…………
@@ -258,8 +258,9 @@
     <!-- 活动预览 -->
     <MDialog :dialog="eventDialogPreview" title="活动预览" confirmText="提交">
       <div class="preview-background-mask">
-        <MEvent :event="eventPreview" />
-        <p>{{ eventPreview }}</p>
+        <MEvent :event="eventPreview" :sentinelHeight="0" />
+        <div class="preview-coderaw"><p>{{ eventPreview }}</p></div>
+        
       </div>
     </MDialog>
   </div>
@@ -331,12 +332,19 @@ async function dialogAlert(msg, content) {
   globalDialogAlertContent.value = content
   await globalDialogAlert.alert()
 }
+async function dialogAlertByResp(respjson, successMsg, errorMsg) {
+  if (respjson.error == 0) {
+    await dialogAlert(successMsg || '操作成功')
+  } else {
+    await dialogAlert(errorMsg || '操作失败', respjson.message)
+  }
+}
 const requestOp = async (endpoint, formData) => {
   globalDialogLoad.load()
 
+  let response;
+  let respjson;
   try {
-    let response;
-    let respjson;
     if (formData){
       response = await fetch(apiBase + endpoint, {
         method: 'POST',
@@ -462,12 +470,7 @@ const delsuSubmit = async () => {
   if (!respjson) {
     return;
   }
-  delsuResp.value = respjson
-  if (delsuResp.value.error == 0) {
-    dialogAlert('删除成功', delsuResp.value.message)
-  } else {
-    dialogAlert('删除失败', delsuResp.value.message)
-  }
+  await dialogAlertByResp(respjson, '删除成功', '删除失败')
 }
 // #endregion
 
@@ -508,8 +511,7 @@ const addanSubmit = async () => {
   if (!respjson) {
     return;
   }
-  addanResp.value = respjson
-  dialogAlert('添加成功', `公告ID: ${respjson.data.id}`)
+  await dialogAlertByResp(respjson, `公告ID: ${respjson.data.id}`, '添加失败')
 }
 // #endregion
 
@@ -531,8 +533,7 @@ const delanSubmit = async () => {
   if (!respjson) {
     return;
   }
-  delanResp.value = respjson
-  dialogAlert('删除成功')
+  await dialogAlertByResp(respjson, '删除成功', '删除失败')
 }
 // #endregion
 
@@ -549,10 +550,6 @@ const modanFormDataInit = {
   category: ''
 }
 const modanFormData = ref(modanFormDataInit)
-const modanResp = ref({
-  error: 0,
-  message: ''
-})
 const loadAnnouncementDetails = async () => {
   modanSelRef.value.style.display = 'none'
   modanFormRef.value.style.display = 'block'
@@ -571,7 +568,7 @@ const loadAnnouncementDetails = async () => {
 };
 const modanSubmit = async () => {
   if (!modanFormData.value.id) {
-    dialogAlert('请先选择公告')
+    await dialogAlert('请先选择公告')
     return
   }
 
@@ -595,8 +592,7 @@ const modanSubmit = async () => {
   if (!respjson) {
     return;
   }
-  modanResp.value = respjson
-  dialogAlert('修改成功')
+  await dialogAlertByResp(respjson, '修改成功', '修改失败')
 }
 // #endregion
 
@@ -633,8 +629,7 @@ const addevSubmit = async () => {
   if (!respjson) {
     return;
   }
-  addevResp.value = respjson
-  dialogAlert('添加成功', `活动ID: ${respjson.data.id}`)
+  await dialogAlertByResp(respjson, `活动ID: ${respjson.data.id}`, '添加失败')
 }
 // #endregion
 
@@ -657,8 +652,7 @@ const delevSubmit = async () => {
   if (!respjson) {
     return;
   }
-  delevResp.value = respjson
-  dialogAlert('删除成功')
+  await dialogAlertByResp(respjson, '删除成功', '删除失败')
 }
 // #endregion
 
@@ -674,15 +668,14 @@ const modevFormDataInit = {
   prevImg: ''
 }
 const modevFormData = ref(modevFormDataInit)
-const modevResp = ref({
-  error: 0,
-  message: ''
-})
 const loadEventDetails = async () => {
   modevSelRef.value.style.display = 'none'
   modevFormRef.value.style.display = 'block'
-  const event = Object.values(events.value).find(e => e.id === selectedEventId.value);
+  console.log(events.value)
+  console.log(selectedEventId.value)
+  const event = events.value[selectedEventId.value] ?? null;
   if (event) {
+    console.log('success find event', event)
     modevFormData.value = {
       id: event.id,
       title: event.title,
@@ -719,8 +712,7 @@ const modevSubmit = async () => {
   if (!respjson) {
     return;
   }
-  modevResp.value = respjson
-  dialogAlert('修改成功')
+  await dialogAlertByResp(respjson, '修改成功', '修改失败')
 }
 // #endregion
 
@@ -882,6 +874,15 @@ const modevSubmit = async () => {
 
   padding: 20px 5px;
   text-align: left;
+}
+.preview-coderaw {
+  background-color: #000000;
+  color: #fff;
+  font-size: 14px;
+
+  white-space: pre;
+  word-break: break-all;
+  overflow: auto;
 }
 
 /* #endregion */

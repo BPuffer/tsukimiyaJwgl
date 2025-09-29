@@ -59,11 +59,11 @@
       <!-- 许可协议 -->
       <div class="setting-item">
         <div class="setting-item-actionbtn" @click="openLicense">
-          许可协议
+          个人部署通用用户许可协议
         </div>
-        <MDialog :dialog="dialogLicense" title="许可协议" confirmText="同意" cancelText="不同意并清空数据">
+        <MDialog :dialog="dialogLicense" title="个人部署通用用户许可协议" confirmText="同意" cancelText="不同意并清空数据">
           <iframe 
-            src="/license-vlast.html" 
+            :src="`/license-v${LICENSE_VERSION}.html`" 
             frameborder="0"
             style="width:100%; height:400px"
           ></iframe>

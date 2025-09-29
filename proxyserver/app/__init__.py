@@ -23,14 +23,21 @@ def create_app(config_class=Config):
 
     # 确保数据库表存在
     with app.app_context():
-        from app.models import Announcement
+        from app.models import Announcement, Event
         try:
             Announcement.query.limit(1).all()
         except Exception as e:
             if "no such table" in str(e):
                 print("初始化数据库表...")
                 db.create_all()
-                print("数据库表创建完成")
+                print("数据库表创建完成,本进程重启")
+                exit()
+            elif "no such column" in str(e):
+                print("v1.3 表结构更新...")
+                Announcement.db_v1_3_update()
+                Event.db_v1_3_update()
+                print("数据库表更新完成,本进程重启")
+                exit()
             else:
                 raise e
     
